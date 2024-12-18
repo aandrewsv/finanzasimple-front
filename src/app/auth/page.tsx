@@ -171,8 +171,8 @@ export default function AuthPage() {
                       type="email"
                       placeholder="correo@ejemplo.com"
                       icon={<Mail className="h-4 w-4" />}
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={requestAccessEmail}
+                      onChange={(e) => setRequestAccessEmail(e.target.value)}
                       required
                     />
                     <p className="text-sm text-gray-500 dark:text-gray-400">
