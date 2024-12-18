@@ -131,7 +131,7 @@ function MobileNavItems({ pathname }: { pathname: string }) {
   return (
     <>
       <Link
-        href="/"
+        href="/app"
         className={cn(
           "px-4 py-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800",
           pathname === "/app" 
@@ -145,7 +145,7 @@ function MobileNavItems({ pathname }: { pathname: string }) {
         </span>
       </Link>
       <Link
-        href="/"
+        href="/app/historial"
         className={cn(
           "px-4 py-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800",
           pathname === "/app/historial" 

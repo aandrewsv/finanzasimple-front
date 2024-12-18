@@ -107,44 +107,50 @@ function TransactionItem({
     <button
       onClick={onClick}
       className={cn(
-        "w-full p-3 rounded-lg text-left transition-colors",
+        "w-full p-4", // Aumentado el padding
+        "rounded-lg text-left transition-colors",
         "hover:bg-gray-50 dark:hover:bg-gray-800/50",
         "focus:outline-none focus:ring-2 focus:ring-blue-500/50"
       )}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <span className={cn(
-              "inline-flex px-2 py-1 rounded-full text-xs font-medium shrink-0",
-              "bg-gray-100 dark:bg-gray-800",
-              theme.colors.text.secondary
-            )}>
-              {/* Aquí deberás obtener el nombre de la categoría */}
-              {transaction.categoria.nombre}
-            </span>
-            <span className={cn(
-              "text-sm line-clamp-1", // line-clamp-1 para una línea con elipsis
-              theme.colors.text.primary
-            )}>
-              {transaction.descripcion || "Sin descripción"}
-            </span>
-          </div>
+      {/* Estructura en columnas para móvil */}
+      <div className="space-y-2">
+        {/* Fila superior: Categoría y Hora */}
+        <div className="flex items-center justify-between">
           <span className={cn(
-            "text-xs mt-1 block",
+            "inline-flex px-2 py-1 rounded-full text-xs font-medium",
+            "bg-gray-100 dark:bg-gray-800",
+            theme.colors.text.secondary
+          )}>
+            {transaction.categoria.nombre}
+          </span>
+          <span className={cn(
+            "text-xs",
             theme.colors.text.muted
           )}>
             {format(new Date(transaction.fecha), "h:mm a", { locale: es })}
           </span>
         </div>
-        <div className={cn(
-          "text-base font-semibold whitespace-nowrap",
-          transaction.tipo === 'ingreso' 
-            ? "text-green-600 dark:text-green-500"
-            : "text-red-600 dark:text-red-500"
-        )}>
-          {transaction.tipo === 'ingreso' ? '+' : '-'}
-          ${transaction.monto.toLocaleString('es-CO')}
+        {/* Fila del medio: Descripción */}
+        {transaction.descripcion && (
+          <p className={cn(
+            "text-sm line-clamp-2", // Permitimos hasta 2 líneas en móvil
+            theme.colors.text.primary
+          )}>
+            {transaction.descripcion}
+          </p>
+        )}
+        {/* Fila inferior: Monto */}
+        <div className="flex justify-end">
+          <span className={cn(
+            "text-base font-semibold",
+            transaction.tipo === 'ingreso' 
+              ? "text-green-600 dark:text-green-500"
+              : "text-red-600 dark:text-red-500"
+          )}>
+            {transaction.tipo === 'ingreso' ? '+' : '-'}
+            ${transaction.monto.toLocaleString('es-CO')}
+          </span>
         </div>
       </div>
     </button>
