@@ -5,6 +5,7 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { getDateRangeFromTimeRange } from "@/lib/utils/dates"
 import { theme } from "@/lib/theme"
+import { TransactionBalance } from "@/components/transactions/transaction-balance"
 import { TransactionList } from "@/components/transactions/transaction-list"
 import { TransactionDetailsPanel } from "@/components/transactions/transaction-details-panel"
 import { TransactionEditForm } from "@/components/transactions/transaction-edit-form"
@@ -170,7 +171,7 @@ export default function TransactionsHistoryPage() {
         "bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))]"
       )}>
         <div className="flex-1 flex flex-col items-start justify-start py-8 px-4 md:px-8">
-          <div className="w-full max-w-5xl mx-auto">
+          <div className="w-full max-w-5xl mx-auto space-y-6">
             {/* Header y Controles */}
             <div className="mb-6">
               <h1 className={cn(
@@ -180,8 +181,11 @@ export default function TransactionsHistoryPage() {
                 Historial de Transacciones
               </h1>
 
+              {/* Balance Card */}
+              <TransactionBalance transactions={transactions} />
+
               {/* Controles de visualización */}
-              <div className="space-y-4">
+              <div className="space-y-4 mt-4">
                 {/* Toggle de tipo de transacción */}
                 <div className="bg-gray-100/80 dark:bg-gray-800/80 rounded-lg p-1 w-fit">
                   <button
@@ -237,7 +241,7 @@ export default function TransactionsHistoryPage() {
                         viewMode === "custom" && "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
                       )}
                     >
-                      Rango personalizado
+                      Personalizada
                     </button>
                   </div>
 
