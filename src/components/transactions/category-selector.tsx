@@ -1,3 +1,4 @@
+// src/app/components/transactions/category-selector.tsx
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Check, ChevronDown, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -182,7 +183,7 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
         )}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-2 truncate">
           {selectedCategory ? (
             <>
               {selectedCategory.nombre}
@@ -196,14 +197,21 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
 
       {isOpen && (
         <div className={cn(
-          "absolute mt-2 w-full rounded-md border shadow-lg z-50",
+          "fixed md:absolute left-0 md:left-auto right-0 md:right-auto bottom-0 md:bottom-auto",
+          "md:mt-2 w-full md:w-auto min-w-full",
+          "rounded-t-lg md:rounded-lg border shadow-lg z-50",
           "bg-white dark:bg-gray-900",
           "backdrop-blur-lg bg-opacity-95 dark:bg-opacity-95",
           "shadow-lg dark:shadow-gray-900/20",
-          theme.colors.border.main
+          theme.colors.border.main,
+          "md:max-w-[400px]" // Limitar ancho en desktop
         )}>
           {/* Barra de búsqueda/creación */}
-          <div className={cn("p-2 border-b", theme.colors.border.main)}>
+          <div className={cn(
+            "sticky top-0 p-2 border-b",
+            theme.colors.border.main,
+            "bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm"
+          )}>
             <div className="flex gap-2">
               <Input
                 ref={inputRef}
@@ -236,7 +244,7 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
             </div>
           </div>
 
-          <div className="max-h-[300px] overflow-y-auto py-1">
+          <div className="max-h-[50vh] md:max-h-[300px] overflow-y-auto">
             {/* Categorías personalizadas */}
             {groupedCategories.custom.length > 0 && (
               <div>
@@ -308,6 +316,30 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
                 ))}
               </div>
             )}
+          </div>
+          
+          {/* Botón de cerrar para móvil */}
+          <div className={cn(
+            "md:hidden p-4 border-t",
+            theme.colors.border.main,
+            "bg-gray-50/50 dark:bg-gray-800/50",
+            "backdrop-blur-sm"
+          )}>
+            <Button
+              className={cn(
+                "w-full h-12 text-base font-medium rounded-lg",
+                "bg-gray-100 hover:bg-gray-200 active:bg-gray-300",
+                "dark:bg-gray-700 dark:hover:bg-gray-600 dark:active:bg-gray-500",
+                "text-gray-900 dark:text-gray-100",
+                "border border-gray-200 dark:border-gray-600",
+                "transition-colors duration-200",
+                "flex items-center justify-center gap-2"
+              )}
+              onClick={() => setIsOpen(false)}
+            >
+              <X className="h-4 w-4" />
+              <span>Cerrar selector</span>
+            </Button>
           </div>
         </div>
       )}

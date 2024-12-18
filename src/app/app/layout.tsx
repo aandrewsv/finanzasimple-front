@@ -1,3 +1,4 @@
+// src/app/app/layout.tsx
 import { Header } from "@/components/app/header"
 
 export default function AppLayout({
