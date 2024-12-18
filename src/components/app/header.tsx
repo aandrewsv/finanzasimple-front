@@ -2,7 +2,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Plus, BarChart2, Menu, X } from "lucide-react"
+import { Plus, BarChart2, Menu, X, History } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { useAuth } from "@/contexts/auth-context"
@@ -80,10 +80,10 @@ function DesktopNavItems({ pathname }: { pathname: string }) {
   return (
     <>
       <Link
-        href="/"
+        href="/app"
         className={cn(
           "transition-colors hover:text-gray-900 dark:hover:text-white",
-          pathname === "/" 
+          pathname === "/app" 
             ? "text-gray-900 dark:text-white" 
             : "text-gray-500 dark:text-gray-400"
         )}
@@ -91,6 +91,20 @@ function DesktopNavItems({ pathname }: { pathname: string }) {
         <span className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
           Registrar
+        </span>
+      </Link>
+      <Link
+        href="/app/historial"
+        className={cn(
+          "transition-colors hover:text-gray-900 dark:hover:text-white",
+          pathname === "/app/historial" 
+            ? "text-gray-900 dark:text-white" 
+            : "text-gray-500 dark:text-gray-400"
+        )}
+      >
+        <span className="flex items-center gap-2">
+          <History className="h-4 w-4" />
+          Historial
         </span>
       </Link>
       <TooltipProvider>
@@ -120,7 +134,7 @@ function MobileNavItems({ pathname }: { pathname: string }) {
         href="/"
         className={cn(
           "px-4 py-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800",
-          pathname === "/" 
+          pathname === "/app" 
             ? "text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800" 
             : "text-gray-500 dark:text-gray-400"
         )}
@@ -128,6 +142,20 @@ function MobileNavItems({ pathname }: { pathname: string }) {
         <span className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
           Registrar
+        </span>
+      </Link>
+      <Link
+        href="/"
+        className={cn(
+          "px-4 py-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800",
+          pathname === "/app/historial" 
+            ? "text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800" 
+            : "text-gray-500 dark:text-gray-400"
+        )}
+      >
+        <span className="flex items-center gap-2">
+          <History className="h-4 w-4" />
+          Historial
         </span>
       </Link>
       <span className="px-4 py-2 flex items-center gap-2 text-gray-500 dark:text-gray-400">

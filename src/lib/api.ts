@@ -1,3 +1,4 @@
+// src/lib/api.ts
 const BASE_URL = process.env.BACK_URL;
 
 // Utilidad para obtener el token
@@ -22,31 +23,6 @@ export interface CreateTransaccionDTO {
   tipo: 'ingreso' | 'egreso';
   categoria: string;
 }
-
-// API de Transacciones
-export const transaccionesApi = {
-  // Crear una nueva transacción
-  crearTransaccion: async (transaccion: CreateTransaccionDTO) => {
-    try {
-      const response = await fetch(`${BASE_URL}/api/transacciones`, {
-        method: 'POST',
-        headers: {
-          ...getAuthHeader(),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(transaccion),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al crear la transacción');
-      }
-
-      return response.json();
-    } catch (error) {
-      handleApiError(error);
-    }
-  },
-};
 
 // Interfaces Categorías
 export interface CreateCategoriaDTO {
@@ -174,3 +150,154 @@ export const {
   eliminarCategoria,
   obtenerCategoria,
 } = categoriasApi;
+
+
+// Interfaces para Transacciones
+export interface Categoria {
+  _id: string;
+  nombre: string;
+  tipo: 'ingreso' | 'egreso';
+  isDefault?: boolean;
+  orden?: number;
+}
+
+export interface Transaccion {
+  _id: string;
+  fecha: string;
+  monto: number;
+  descripcion: string;
+  tipo: 'ingreso' | 'egreso';
+  categoria: Categoria; // Ahora es el objeto completo en lugar de solo el ID
+  usuario: string;
+}
+
+export interface TransaccionesFilters {
+  startDate?: string;
+  endDate?: string;
+  tipo?: 'ingreso' | 'egreso';
+}
+
+// API de Transacciones
+export const transaccionesApi = {
+  // Método existente
+  crearTransaccion: async (transaccion: CreateTransaccionDTO) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/transacciones`, {
+        method: 'POST',
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(transaccion),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al crear la transacción');
+      }
+
+      return response.json();
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  // Nuevo método para obtener transacciones con filtros
+  fetchTransacciones: async (filters?: TransaccionesFilters) => {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      if (filters?.startDate) queryParams.append('startDate', filters.startDate);
+      if (filters?.endDate) queryParams.append('endDate', filters.endDate);
+      if (filters?.tipo) queryParams.append('tipo', filters.tipo);
+
+      const url = `${BASE_URL}/api/transacciones${
+        queryParams.toString() ? `?${queryParams.toString()}` : ''
+      }`;
+
+      const response = await fetch(url, {
+        headers: {
+          ...getAuthHeader(),
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.mensaje || 'Error al obtener las transacciones');
+      }
+
+      return response.json();
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  // Obtener una transacción específica
+  fetchTransaccion: async (id: string) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/transacciones/${id}`, {
+        headers: {
+          ...getAuthHeader(),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al obtener la transacción');
+      }
+
+      return response.json();
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  // Actualizar una transacción
+  actualizarTransaccion: async (id: string, updates: Partial<CreateTransaccionDTO>) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/transacciones/${id}`, {
+        method: 'PUT',
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar la transacción');
+      }
+
+      return response.json();
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  // Eliminar una transacción
+  eliminarTransaccion: async (id: string) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/transacciones/${id}`, {
+        method: 'DELETE',
+        headers: {
+          ...getAuthHeader(),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar la transacción');
+      }
+
+      return true;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+};
+
+// Re-exportar funciones individuales
+export const {
+  crearTransaccion,
+  fetchTransacciones,
+  fetchTransaccion,
+  actualizarTransaccion,
+  eliminarTransaccion,
+} = transaccionesApi;
