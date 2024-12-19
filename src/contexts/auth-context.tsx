@@ -14,9 +14,7 @@ interface AuthContextType {
   login: (userData: { _id: string; email: string; token: string }) => void
   logout: () => void
   isLoading: boolean
-  checkAuthAndRedirect: () => void
   isCheckingAuth: boolean
-  setIsCheckingAuth: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -29,17 +27,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Verificar si hay un token almacenado al cargar la página
-    const storedToken = localStorage.getItem("token")
-    const storedUser = localStorage.getItem("user")
+    const verifyAuth = async () => {
+      try {
+        const storedToken = localStorage.getItem("token")
+        
+        if (!storedToken) {
+          throw new Error('No token found');
+        }
 
-    if (storedToken && storedUser) {
-      setToken(storedToken)
-      setUser(JSON.parse(storedUser))
-    }
-    setIsLoading(false)
-    setIsCheckingAuth(false)
-  }, [])
+        // Verificar el token con el backend
+        const response = await fetch(`${process.env.BACK_URL}/api/auth/verify`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${storedToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Token verification failed');
+        }
+
+        const data = await response.json();
+        
+        if (data.autenticado) {
+          setUser(data.usuario);
+          setToken(storedToken);
+        } else {
+          throw new Error('Token not authenticated');
+        }
+
+      } catch (error) {
+        // Si hay cualquier error, limpiamos el estado
+        console.error('Auth verification error:', error);
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        router.push("/");
+      } finally {
+        setIsLoading(false);
+        setIsCheckingAuth(false);
+      }
+    };
+
+    verifyAuth();
+  }, [router]);
 
   const login = (userData: { _id: string; email: string; token: string }) => {
     setUser({ _id: userData._id, email: userData.email })
@@ -49,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       _id: userData._id, 
       email: userData.email 
     }))
-    router.push("/")
+    router.push("/app")
   }
 
   const logout = () => {
@@ -57,19 +90,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null)
     localStorage.removeItem("token")
     localStorage.removeItem("user")
-    router.push("/auth")
+    router.push("/")
   }
 
-  const checkAuthAndRedirect = () => {
-    if (!user || !token) {
-      router.push("/");
-    } else {
-      setIsCheckingAuth(false);
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading, checkAuthAndRedirect, isCheckingAuth, setIsCheckingAuth }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      token, 
+      login, 
+      logout, 
+      isLoading, 
+      isCheckingAuth 
+    }}>
       {children}
     </AuthContext.Provider>
   )
