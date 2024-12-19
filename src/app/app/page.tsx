@@ -92,7 +92,7 @@ export default function TransactionsPage() {
             <Button
               variant="ghost"
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 hover:text-white dark:text-white dark:hover:text-gray-600 text-gray-900",
+                "flex-1 flex items-center justify-center gap-2 hover:text-white dark:text-green-500 dark:hover:text-gray-600 text-green-600",
                 tipo === 'ingreso' && cn(theme.colors.background.main, "shadow-sm")
               )}
               onClick={() => setTipo('ingreso')}
@@ -106,7 +106,7 @@ export default function TransactionsPage() {
             <Button
               variant="ghost"
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 hover:text-white dark:text-white dark:hover:text-gray-600 text-gray-900",
+                "flex-1 flex items-center justify-center gap-2 hover:text-white dark:text-red-500 dark:hover:text-gray-600 text-red-600",
                 tipo === 'egreso' && cn(theme.colors.background.main, "shadow-sm")
               )}
               onClick={() => setTipo('egreso')}
@@ -129,7 +129,7 @@ export default function TransactionsPage() {
                 "text-3xl font-semibold text-center h-16",
                 theme.colors.background.main,
                 theme.colors.border.main,
-                theme.colors.text.primary
+                tipo === 'ingreso' ? "text-green-600 dark:text-green-500" : "text-red-500 dark:text-red-500"
               )}
             />
           </div>
