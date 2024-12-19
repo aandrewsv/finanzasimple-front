@@ -1,3 +1,4 @@
+// src/contexts/auth-context.tsx
 "use client"
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -13,6 +14,9 @@ interface AuthContextType {
   login: (userData: { _id: string; email: string; token: string }) => void
   logout: () => void
   isLoading: boolean
+  checkAuthAndRedirect: () => void
+  isCheckingAuth: boolean
+  setIsCheckingAuth: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -21,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
@@ -33,6 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(JSON.parse(storedUser))
     }
     setIsLoading(false)
+    setIsCheckingAuth(false)
   }, [])
 
   const login = (userData: { _id: string; email: string; token: string }) => {
@@ -54,8 +60,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/auth")
   }
 
+  const checkAuthAndRedirect = () => {
+    if (!user || !token) {
+      router.push("/");
+    } else {
+      setIsCheckingAuth(false);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isLoading, checkAuthAndRedirect, isCheckingAuth, setIsCheckingAuth }}>
       {children}
     </AuthContext.Provider>
   )

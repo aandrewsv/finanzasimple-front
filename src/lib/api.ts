@@ -4,7 +4,7 @@ const BASE_URL = process.env.BACK_URL;
 // Utilidad para obtener el token
 const getAuthHeader = () => {
   const token = localStorage.getItem('token');
-  if (!token) throw new Error('No hay token');
+  if (!token) throw new Error('Al parecer, hay un problema la autenticación');
   return { 'Authorization': `Bearer ${token}` };
 };
 
