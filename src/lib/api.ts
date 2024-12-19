@@ -22,7 +22,6 @@ export interface Categoria {
   nombre: string;
   tipo: 'ingreso' | 'egreso';
   orden: number;
-  isDefault: boolean;
   isVisible: boolean;
   usuario: string;
 }

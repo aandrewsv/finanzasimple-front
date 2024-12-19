@@ -95,10 +95,11 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
   // Toggle de visibilidad de categoría
   const toggleCategoryVisibility = async (categoryId: string) => {
     try {
+      
         updateState({ isLoadingAction: true });
         const categoria = categories.find((cat: Categoria) => cat._id === categoryId);
         
-        if (!categoria || categoria.isDefault) return;
+        if (!categoria) return;
 
         const isCurrentlyVisible = !hiddenCategories.has(categoryId);
         
@@ -212,7 +213,7 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
       
       toast({
         title: "Categoría eliminada",
-        description: `Las transacciones se han movido a "${type === 'ingreso' ? '✨ Otros Ingresos' : '📝 Otros Gastos'}"`,
+        description: `Las transacciones asociadas se han movido a "${type === 'ingreso' ? '✨ Otros Ingresos' : '📝 Otros Gastos'}"`,
       });
     } catch (error) {
       toast({
@@ -273,7 +274,6 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
             theme.colors.border.main,
             theme.colors.text.primary,
             "hover:bg-gray-50 dark:hover:bg-gray-800",
-            selectedCategory?.isDefault && theme.colors.text.muted
           )}
           onClick={() => updateState({ isOpen: !state.isOpen })}
           disabled={state.isLoading}
@@ -396,32 +396,27 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
                   )}>
                     <span className={cn(
                       "flex-1 truncate",
-                      categoria.isDefault && "opacity-75"
                     )}>
                       {categoria.nombre}
                     </span>
                     <div className="flex items-center gap-2">
-                      {!categoria.isDefault && (
-                        <>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => updateState({
-                              editingCategory: categoria._id,
-                              editValue: categoria.nombre
-                            })}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => updateState({ deletingCategory: categoria })}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-400" />
-                          </Button>
-                        </>
-                      )}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => updateState({
+                          editingCategory: categoria._id,
+                          editValue: categoria.nombre
+                        })}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => updateState({ deletingCategory: categoria })}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-400" />
+                      </Button>
                       <button
                         className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
                         onClick={() => toggleCategoryVisibility(categoria._id)}
@@ -445,7 +440,6 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
                   >
                     <span className={cn(
                       "flex items-center gap-2",
-                      categoria.isDefault && theme.colors.text.muted
                     )}>
                       {categoria.nombre}
                       {value === categoria._id && (
@@ -520,9 +514,9 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar categoría?</AlertDialogTitle>
             <AlertDialogDescription>
-              Las transacciones asociadas se moverán a la categoría 
-              {type === 'ingreso' ? '"✨ Otros Ingresos"' : '"📝 Otros Gastos"'}. 
-              Esta acción no se puede deshacer.
+              Las transacciones asociadas a esta categoría se moverán a la categoría {" "}
+              {type === 'ingreso' ? '✨ Otros Ingresos' : '📝 Otros Gastos'}. Si no existe la crearemos por ti <br /><br />
+              Esta acción no se puede deshacer. ¿Estás seguro que quieres continuar?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
