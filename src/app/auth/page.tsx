@@ -11,6 +11,7 @@ import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
+import LoadingScreen from "@/components/app/loading-screen"
 
 
 
@@ -34,7 +35,7 @@ export default function AuthPage() {
 
     // Si está cargando o hay usuario, no mostrar nada
     if (isAuthLoading || user) {
-      return null
+      return <LoadingScreen />
     }
 
   const handleLogin = async (e: React.FormEvent) => {
