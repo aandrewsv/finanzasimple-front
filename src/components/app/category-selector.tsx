@@ -1,13 +1,41 @@
 // src/app/components/transactions/category-selector.tsx
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Check, ChevronDown, Pencil, Plus, Trash2, X } from "lucide-react";
+import { 
+  Check, 
+  ChevronDown, 
+  Pencil, 
+  Plus, 
+  Trash2, 
+  Loader2, 
+  Eye, 
+  EyeOff, 
+  Settings2
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast";
 import { categoriasApi } from '@/lib/api';
-import type { Categoria } from "@/types/categoria";
+import type { Categoria } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { theme } from "@/lib/theme";
+
 
 
 type TransactionType = "ingreso" | "egreso";
@@ -18,64 +46,124 @@ interface CategorySelectorProps {
   onChange: (value: string) => void;
 }
 
-interface CategoriesGroup {
-  custom: Categoria[];
-  default: Categoria[];
+interface CategoryManagerState {
+  isOpen: boolean;
+  mode: 'view' | 'edit';
+  editingCategory: string | null;
+  editValue: string;
+  deletingCategory: Categoria | null;
+  isLoading: boolean;
+  isLoadingAction: boolean;
 }
 
+
 export function CategorySelector({ type, value, onChange }: CategorySelectorProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [state, setState] = useState<CategoryManagerState>({
+    isOpen: false,
+    mode: 'view',
+    editingCategory: null,
+    editValue: "",
+    deletingCategory: null,
+    isLoading: false,
+    isLoadingAction: false
+  });
   const [categories, setCategories] = useState<Categoria[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set());
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [editingCategory, setEditingCategory] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  // const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Agrupar categorías por tipo (personalizadas y por defecto)
-  const groupedCategories = useMemo((): CategoriesGroup => {
-    return categories.reduce(
-      (acc, cat) => {
-        if (cat.isDefault) {
-          acc.default.push(cat);
-        } else {
-          acc.custom.push(cat);
-        }
-        return acc;
-      },
-      { custom: [] as Categoria[], default: [] as Categoria[] }
-    );
-  }, [categories]);
+  // Función helper para actualizar estado parcialmente
+  const updateState = (updates: Partial<CategoryManagerState>) => {
+    setState(current => ({ ...current, ...updates }));
+  };
+
+  const handleCategoriesSettingsClick = () => {
+    updateState({ mode: state.mode === 'view' ? 'edit' : 'view' }) 
+    updateState({ isOpen: true });
+  }
+
+  // Filtrar categorías basado en visibilidad
+  const filteredCategories = useMemo(() => {
+    if (state.mode === 'view') {
+      return categories.filter((cat: Categoria) => !hiddenCategories.has(cat._id));
+    }
+    return categories;
+  }, [categories, hiddenCategories, state.mode]);
+
+  // Toggle de visibilidad de categoría
+  const toggleCategoryVisibility = async (categoryId: string) => {
+    try {
+      
+        updateState({ isLoadingAction: true });
+        const categoria = categories.find((cat: Categoria) => cat._id === categoryId);
+        
+        if (!categoria) return;
+
+        const isCurrentlyVisible = !hiddenCategories.has(categoryId);
+        
+        await categoriasApi.actualizarVisibilidad(categoryId, !isCurrentlyVisible);
+        
+        setHiddenCategories(prev => {
+            const updated = new Set<string>(prev);
+            if (isCurrentlyVisible) {
+                updated.add(categoryId);
+            } else {
+                updated.delete(categoryId);
+            }
+            return updated;
+        });
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No se pudo actualizar la visibilidad de la categoría"
+        });
+        console.error(error);
+    } finally {
+        updateState({ isLoadingAction: false });
+    }
+  };
+
+
+
 
   const selectedCategory = categories.find(cat => cat._id === value);
 
   // Cargar categorías
   useEffect(() => {
     const loadCategories = async () => {
-      setIsLoading(true);
-      try {
-        const data = await categoriasApi.fetchCategorias();
-        setCategories(data.filter((cat: Categoria) => cat.tipo === type));
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error instanceof Error ? error.message : "Error al cargar categorías",
-        });
-      } finally {
-        setIsLoading(false);
-      }
+        updateState({ isLoading: true });
+        try {
+            const data = await categoriasApi.fetchCategorias();
+            const filteredCategories = data.filter((cat: Categoria) => cat.tipo === type);
+            setCategories(filteredCategories);
+            
+            // Inicializar hiddenCategories con las categorías no visibles
+            const hiddenCategoryIds = filteredCategories
+                .filter((cat: Categoria) => !cat.isVisible)
+                .map((cat: Categoria) => cat._id);
+              
+                setHiddenCategories(new Set<string>(hiddenCategoryIds));
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: error instanceof Error ? error.message : "Error al cargar categorías",
+            });
+        } finally {
+            updateState({ isLoading: false });
+        }
     };
     loadCategories();
-  }, [type, toast]);
+}, [type, toast]);
 
   // Cerrar al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        updateState({ isOpen: false });
       }
     };
 
@@ -87,7 +175,7 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
   const handleCreate = async () => {
     if (!newCategoryName.trim()) return;
 
-    setIsLoading(true);
+    updateState({ isLoading: true });
     try {
       const nuevaCategoria = await categoriasApi.crearCategoria({
         nombre: newCategoryName.trim(),
@@ -109,21 +197,23 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
         description: error instanceof Error ? error.message : "Error al crear categoría",
       });
     } finally {
-      setIsLoading(false);
+      updateState({ isLoading: false });
+
     }
   };
 
-  // Manejar la eliminación de categorías
+  // Manejar la eliminación de categorías con confirmación
   const handleDelete = async (categoria: Categoria) => {
     try {
+      updateState({ isLoadingAction: true });
       await categoriasApi.eliminarCategoria(categoria._id);
       
       setCategories(prev => prev.filter(cat => cat._id !== categoria._id));
       if (value === categoria._id) onChange("");
       
       toast({
-        title: "Éxito",
-        description: `Categoría "${categoria.nombre}" eliminada.`,
+        title: "Categoría eliminada",
+        description: `Las transacciones asociadas se han movido a "${type === 'ingreso' ? '✨ Otros Ingresos' : '📝 Otros Gastos'}"`,
       });
     } catch (error) {
       toast({
@@ -131,20 +221,23 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
         title: "Error",
         description: error instanceof Error ? error.message : "Error al eliminar categoría",
       });
+    } finally {
+      updateState({ isLoadingAction: false, deletingCategory: null });
     }
   };
 
+
   // Manejar la edición de categorías
   const handleEdit = async (categoria: Categoria) => {
-    if (!editValue.trim() || editValue === categoria.nombre) {
-      setEditingCategory(null);
+    if (!state.editValue.trim() || state.editValue === categoria.nombre) {
+      updateState({ editingCategory: null });
       return;
     }
 
     try {
       const updatedCategoria = await categoriasApi.actualizarCategoria(
         categoria._id,
-        { nombre: editValue.trim() }
+        { nombre: state.editValue.trim() }
       );
 
       setCategories(prev => prev.map(cat => 
@@ -162,40 +255,56 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
         description: error instanceof Error ? error.message : "Error al actualizar categoría",
       });
     } finally {
-      setEditingCategory(null);
+      updateState({ editingCategory: null });
     }
   };
 
 
   return (
     <div className="relative w-full" ref={containerRef}>
-      <Button
-        variant="outline"
-        role="combobox"
-        aria-expanded={isOpen}
-        className={cn(
-          "w-full justify-between",
-          theme.colors.background.main,
-          theme.colors.border.main,
-          theme.colors.text.primary,
-          "hover:bg-gray-50 dark:hover:bg-gray-800",
-          selectedCategory?.isDefault && theme.colors.text.muted
-        )}
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <span className="flex items-center gap-2 truncate">
-          {selectedCategory ? (
-            <>
-              {selectedCategory.nombre}
-            </>
-          ) : (
-            "Seleccionar categoría..."
+      {/* Botón principal */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={state.isOpen}
+          className={cn(
+            "w-full justify-between",
+            theme.colors.background.main,
+            theme.colors.border.main,
+            theme.colors.text.primary,
+            "hover:bg-gray-50 dark:hover:bg-gray-800",
           )}
-        </span>
-        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-      </Button>
+          onClick={() => updateState({ isOpen: !state.isOpen })}
+          disabled={state.isLoading}
+        >
+          <span className="flex items-center gap-2 truncate">
+            {state.isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : selectedCategory ? (
+              selectedCategory.nombre
+            ) : (
+              "Seleccionar categoría..."
+            )}
+          </span>
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+        {/* Botón de configuración en una posición más natural */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "flex-shrink-0",
+            "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200",
+            state.mode === 'edit' && "text-blue-600 dark:text-blue-400"
+          )}
+          onClick={handleCategoriesSettingsClick}
+        >
+          <Settings2 className="h-4 w-4" />
+        </Button>
+      </div>
 
-      {isOpen && (
+      {state.isOpen && (
         <div className={cn(
           "fixed md:absolute left-0 md:left-auto right-0 md:right-auto bottom-0 md:bottom-auto",
           "md:mt-2 w-full md:w-auto min-w-full",
@@ -206,243 +315,228 @@ export function CategorySelector({ type, value, onChange }: CategorySelectorProp
           theme.colors.border.main,
           "md:max-w-[400px]" // Limitar ancho en desktop
         )}>
-          {/* Barra de búsqueda/creación */}
+
+
+          {/* Header con título contextual */}
           <div className={cn(
-            "sticky top-0 p-2 border-b",
+            "sticky top-0 p-3 border-b flex items-center justify-between",
             theme.colors.border.main,
             "bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm"
           )}>
-            <div className="flex gap-2">
-              <Input
-                ref={inputRef}
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="Nueva categoría..."
+            <h3 className={cn(
+              "text-sm font-medium",
+              theme.colors.text.primary
+            )}>
+              {state.mode === 'edit' ? 'Gestionar Categorías' : 'Seleccionar Categoría'}
+            </h3>
+            {state.mode === 'edit' && (
+              <button
                 className={cn(
-                  "flex-1",
-                  theme.colors.background.subtle,
-                  theme.colors.border.subtle
+                  "text-xs",
+                  theme.colors.text.accent,
+                  "hover:underline"
                 )}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newCategoryName.trim()) {
-                    handleCreate();
-                  }
-                }}
-              />
-              <Button
-                size="icon"
-                onClick={handleCreate}
-                disabled={!newCategoryName.trim() || isLoading}
+                onClick={() => updateState({ mode: 'view' })}
+              >
+                Listo
+              </button>
+            )}
+          </div>
+
+          {/* Lista de categorías */}
+          <div className="p-2 space-y-2">
+            {/* Nueva categoría (solo en modo edición) */}
+            {state.mode === 'edit' && (
+              <div className={cn(
+                "flex gap-2 p-2 rounded-lg",
+                "bg-gray-50/50 dark:bg-gray-800/50",
+                "border border-dashed",
+                theme.colors.border.subtle
+              )}>
+                <Input
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Nueva categoría..."
+                  className="flex-1"
+                  disabled={state.isLoadingAction}
+                />
+                <Button
+                  size="sm"
+                  onClick={handleCreate}
+                  disabled={!newCategoryName.trim() || state.isLoadingAction}
+                  className={theme.effects.gradient.primary}
+                >
+                  {state.isLoadingAction ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {/* Categorías personalizadas */}
+            {filteredCategories.map(categoria => (
+              <div
+                key={categoria._id}
                 className={cn(
-                  "shrink-0",
-                  theme.effects.gradient.primary,
-                  "text-white"
+                  "relative group",
+                  "rounded-lg transition-colors",
+                  state.mode === 'view' && [
+                    "hover:bg-gray-50 dark:hover:bg-gray-800/50",
+                    value === categoria._id && "bg-gray-50 dark:bg-gray-800/50"
+                  ]
                 )}
               >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="max-h-[50vh] md:max-h-[300px] overflow-y-auto">
-            {/* Categorías personalizadas */}
-            {groupedCategories.custom.length > 0 && (
-              <div>
-                <div className={cn(
-                  "px-3 py-1.5 text-xs font-medium uppercase tracking-wider",
-                  theme.colors.text.muted
-                )}>
-                  Mis Categorías
-                </div>
-                {groupedCategories.custom.map(categoria => (
-                  <CategoryItem
-                    value={value}
-                    key={categoria._id}
-                    categoria={categoria}
-                    isEditing={editingCategory === categoria._id}
-                    editValue={editValue}
-                    onSelect={() => {
-                      onChange(categoria._id);
-                      setIsOpen(false);
-                    }}
-                    onEdit={() => {
-                      setEditingCategory(categoria._id);
-                      setEditValue(categoria.nombre);
-                    }}
-                    onDelete={() => handleDelete(categoria)}
-                    onEditSubmit={() => handleEdit(categoria)}
-                    onEditCancel={() => setEditingCategory(null)}
-                    onEditChange={(value) => setEditValue(value)}
-                  />
-                ))}
-              </div>
-            )}
-
-
-            {/* Separador */}
-            {groupedCategories.custom.length > 0 && groupedCategories.default.length > 0 && (
-              <div className={cn("my-2 border-t", theme.colors.border.main)} />
-            )}
-
-            {/* Categorías por defecto */}
-            {groupedCategories.default.length > 0 && (
-              <div>
-                <div className={cn(
-                  "px-3 py-1.5 text-xs font-medium uppercase tracking-wider",
-                  theme.colors.text.muted
-                )}>
-                  Categorías Predefinidas
-                </div>
-                {groupedCategories.default.map(categoria => (
-                  <div
-                    key={categoria._id}
-                    className={cn(
-                      "group flex items-center px-3 py-2 cursor-pointer",
-                      theme.colors.background.hover,
-                      value === categoria._id && theme.colors.background.subtle
-                    )}
-                    onClick={() => {
-                      onChange(categoria._id);
-                      setIsOpen(false);
-                    }}
-                  >
-                    <div className={cn(
-                      "flex items-center gap-2",
-                      theme.colors.text.muted
+                {state.mode === 'edit' ? (
+                  // Modo edición
+                  <div className={cn(
+                    "flex items-center p-2 rounded-lg",
+                    "bg-gray-50/50 dark:bg-gray-800/50"
+                  )}>
+                    <span className={cn(
+                      "flex-1 truncate",
                     )}>
                       {categoria.nombre}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => updateState({
+                          editingCategory: categoria._id,
+                          editValue: categoria.nombre
+                        })}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => updateState({ deletingCategory: categoria })}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-400" />
+                      </Button>
+                      <button
+                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                        onClick={() => toggleCategoryVisibility(categoria._id)}
+                      >
+                        {hiddenCategories.has(categoria._id) ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
                   </div>
-                ))}
+                ) : (
+                  // Modo selección
+                  <button
+                    className="w-full p-2 text-left"
+                    onClick={() => {
+                      onChange(categoria._id);
+                      updateState({ isOpen: false });
+                    }}
+                  >
+                    <span className={cn(
+                      "flex items-center gap-2",
+                    )}>
+                      {categoria.nombre}
+                      {value === categoria._id && (
+                        <Check className="h-4 w-4 ml-auto" />
+                      )}
+                    </span>
+                  </button>
+                )}
               </div>
-            )}
+            ))}
           </div>
-          
-          {/* Botón de cerrar para móvil */}
+
+          {/* Footer para móvil */}
           <div className={cn(
             "md:hidden p-4 border-t",
             theme.colors.border.main,
-            "bg-gray-50/50 dark:bg-gray-800/50",
-            "backdrop-blur-sm"
+            "bg-gray-50/50 dark:bg-gray-800/50"
           )}>
             <Button
-              className={cn(
-                "w-full h-12 text-base font-medium rounded-lg",
-                "bg-gray-100 hover:bg-gray-200 active:bg-gray-300",
-                "dark:bg-gray-700 dark:hover:bg-gray-600 dark:active:bg-gray-500",
-                "text-gray-900 dark:text-gray-100",
-                "border border-gray-200 dark:border-gray-600",
-                "transition-colors duration-200",
-                "flex items-center justify-center gap-2"
-              )}
-              onClick={() => setIsOpen(false)}
+              className="w-full"
+              variant="secondary"
+              onClick={() => updateState({ isOpen: false })}
             >
-              <X className="h-4 w-4" />
-              <span>Cerrar selector</span>
+              Cerrar
             </Button>
           </div>
         </div>
       )}
-    </div>
-  );
-}
 
-// Componente para cada ítem de categoría personalizada
-interface CategoryItemProps {
-  value: string;
-  categoria: Categoria;
-  isEditing: boolean;
-  editValue: string;
-  onSelect: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onEditSubmit: () => void;
-  onEditCancel: () => void;
-  onEditChange: (value: string) => void;
-}
-
-function CategoryItem({
-  value,
-  categoria,
-  isEditing,
-  editValue,
-  onSelect,
-  onEdit,
-  onDelete,
-  onEditSubmit,
-  onEditCancel,
-  onEditChange,
-}: CategoryItemProps) {
-  return (
-    <div 
-      className={cn(
-        "group flex items-center px-3 py-2 cursor-pointer",
-        theme.colors.background.hover,
-        value === categoria._id && theme.colors.background.subtle
-      )}
-      // className="group flex items-center justify-between px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
-    
-    
-    >
-      {isEditing ? (
-        <div className="flex items-center gap-2 w-full">
-          <Input
-            value={editValue}
-            onChange={(e) => onEditChange(e.target.value)}
-            className="flex-1 h-8 dark:bg-gray-600 dark:border-gray-500"
-            autoFocus
-          />
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8"
-            onClick={onEditSubmit}
-          >
-            <Check className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8"
-            onClick={onEditCancel}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      ) : (
-        <>
-          <div
-            className="flex items-center gap-2 flex-1 cursor-pointer text-gray-500 dark:text-gray-40"
-            onClick={onSelect}
-          >
-            {categoria.nombre}
+      {/* Dialog de edición */}
+      <Dialog 
+        open={!!state.editingCategory} 
+        onOpenChange={() => updateState({ editingCategory: null })}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar categoría</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Input
+              value={state.editValue}
+              onChange={(e) => updateState({ editValue: e.target.value })}
+              placeholder="Nombre de la categoría"
+              autoFocus
+            />
           </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <DialogFooter>
             <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 hover:bg-gray-300 dark:hover:bg-gray-800"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
+              variant="outline"
+              onClick={() => updateState({ editingCategory: null })}
             >
-              <Pencil className="h-4 w-4 text-gray-900 dark:text-white" />
+              Cancelar
             </Button>
             <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 hover:bg-gray-300 dark:hover:bg-gray-800"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
+              onClick={() => {
+                const categoria = categories.find(c => c._id === state.editingCategory);
+                if (categoria) handleEdit(categoria);
               }}
             >
-              <Trash2 className="h-4 w-4 text-red-400" />
+              Guardar
             </Button>
-          </div>
-        </>
-      )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de confirmación para eliminar */}
+      <AlertDialog 
+        open={!!state.deletingCategory} 
+        onOpenChange={() => updateState({ deletingCategory: null })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar categoría?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Las transacciones asociadas a esta categoría se moverán a la categoría {" "}
+              {type === 'ingreso' ? '✨ Otros Ingresos' : '📝 Otros Gastos'}. Si no existe la crearemos por ti <br /><br />
+              Esta acción no se puede deshacer. ¿Estás seguro que quieres continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={state.isLoadingAction}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => state.deletingCategory && handleDelete(state.deletingCategory)}
+              disabled={state.isLoadingAction}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {state.isLoadingAction ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
