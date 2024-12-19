@@ -16,26 +16,29 @@ const handleApiError = (error: unknown) => {
   throw new Error('Error desconocido en la API');
 };
 
-// Interfaces Transacciones
-export interface CreateTransaccionDTO {
-  monto: number;
-  descripcion: string;
+// Interfaces Categorías
+export interface Categoria {
+  _id: string;
+  nombre: string;
   tipo: 'ingreso' | 'egreso';
-  categoria: string;
+  orden: number;
+  isDefault: boolean;
+  isVisible: boolean;
+  usuario: string;
 }
 
-// Interfaces Categorías
 export interface CreateCategoriaDTO {
   nombre: string;
   tipo: 'ingreso' | 'egreso';
   orden?: number;
+  isVisible?: boolean;
 }
 
 export interface UpdateCategoriaDTO {
-  nombre: string;
+  nombre?: string;
   orden?: number;
+  isVisible?: boolean;
 }
-
 
 // API de Categorías
 export const categoriasApi = {
@@ -140,6 +143,29 @@ export const categoriasApi = {
       handleApiError(error);
     }
   },
+
+  // Actualizar visibilidad de una categoría
+  actualizarVisibilidad: async (id: string, isVisible: boolean) => {
+    try {
+        const response = await fetch(`${BASE_URL}/api/categorias/${id}/visibility`, {
+            method: 'PATCH',
+            headers: {
+                ...getAuthHeader(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ isVisible }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al actualizar la visibilidad de la categoría');
+        }
+
+        return response.json();
+    } catch (error) {
+        handleApiError(error);
+    }
+  },
+
 };
 
 // Re-exportamos las funciones individuales para mantener compatibilidad
@@ -149,18 +175,11 @@ export const {
   actualizarCategoria,
   eliminarCategoria,
   obtenerCategoria,
+  actualizarVisibilidad
 } = categoriasApi;
 
 
 // Interfaces para Transacciones
-export interface Categoria {
-  _id: string;
-  nombre: string;
-  tipo: 'ingreso' | 'egreso';
-  isDefault?: boolean;
-  orden?: number;
-}
-
 export interface Transaccion {
   _id: string;
   fecha: string;
@@ -175,6 +194,13 @@ export interface TransaccionesFilters {
   startDate?: string;
   endDate?: string;
   tipo?: 'ingreso' | 'egreso';
+}
+
+export interface CreateTransaccionDTO {
+  monto: number;
+  descripcion: string;
+  tipo: 'ingreso' | 'egreso';
+  categoria: string;
 }
 
 // API de Transacciones
