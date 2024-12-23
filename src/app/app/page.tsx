@@ -18,6 +18,7 @@ export default function TransactionsPage() {
   const [monto, setMonto] = useState('')
   const [categoria, setCategoria] = useState('')
   const [descripcion, setDescripcion] = useState('') 
+  const [fecha, setFecha] = useState<Date>(new Date(new Date().getTime() + new Date().getTimezoneOffset() * 60000)) // Adjust for timezone
 
   // Formatea el monto mientras el usuario escribe
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,6 +33,15 @@ export default function TransactionsPage() {
       }).format(number))
     } else {
       setMonto('')
+    }
+  }
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = new Date(e.target.value);
+    if (!isNaN(newDate.getTime())) {
+      setFecha(newDate);
+    } else {
+      setFecha(new Date());
     }
   }
 
@@ -54,6 +64,7 @@ export default function TransactionsPage() {
         monto: montoNumerico,
         tipo,
         categoria,
+        fecha: fecha.toISOString(),
         descripcion
       });
 
@@ -66,6 +77,7 @@ export default function TransactionsPage() {
       setMonto('');
       setCategoria('');
       setDescripcion('');
+      setFecha(new Date());
     } catch (error) {
       console.error(error)
       toast({
@@ -135,14 +147,32 @@ export default function TransactionsPage() {
           </div>
 
           {/* Category Selector */}
-          <CategorySelector
-            type={tipo}
-            value={categoria}
-            onChange={setCategoria}
-          />
+          <div className="mb-6">
+            <CategorySelector
+              type={tipo}
+              value={categoria}
+              onChange={setCategoria}
+            />
+          </div>
+
+          {/* Date Picker */}
+          <div className="mb-6">
+            <Input
+              type="date"
+              value={fecha.toISOString().split('T')[0]}
+              onChange={handleDateChange}
+              className={cn(
+              "w-full px-4 py-2 rounded-md text-sm",
+              theme.colors.background.main,
+              theme.colors.border.main,
+              theme.colors.text.primary,
+              "focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              )}
+            />
+          </div>
 
           {/* Optional Description */}
-          <div className="mt-6 mb-6">
+          <div className="mb-6">
             <Input
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
