@@ -81,6 +81,10 @@ export function TransactionDetailsPanel({
     }
   }
 
+  const handleEditClick = () => {
+    onEdit(transaction);
+  };
+
   const Content = (
     <div className="space-y-6 overflow-hidden">
       {/* Header con acciones */}
@@ -90,16 +94,14 @@ export function TransactionDetailsPanel({
             {transaction.descripcion || "Sin descripción"}
           </h3>
           <p className={cn("text-sm", theme.colors.text.muted)}>
-            {format(new Date(transaction.fecha), "dd 'de' MMMM, yyyy - h:mm a", {
-              locale: es,
-            })}
+            {format(new Date(new Date(transaction.fecha).getTime() + new Date(transaction.fecha).getTimezoneOffset() * 60000), "dd 'de' MMMM, yyyy", { locale: es })} {/* Adjust for timezone */}
           </p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onEdit(transaction)}
+            onClick={handleEditClick} // Use the new handler
           >
             <Pencil className="h-4 w-4" />
           </Button>

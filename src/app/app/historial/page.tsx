@@ -103,7 +103,9 @@ export default function TransactionsHistoryPage() {
     // Aquí manejaremos la apertura del panel de detalles
   }
 
-
+  const handleTransactionUpdated = () => {
+    loadTransactions();
+  };
 
   // Efecto para cargar transacciones
   useEffect(() => {
@@ -317,6 +319,7 @@ export default function TransactionsHistoryPage() {
                   transactions={transactions}
                   isLoading={isLoading}
                   onTransactionClick={handleTransactionClick}
+                  onTransactionUpdated={handleTransactionUpdated} // Pass the new handler
                 />
               )}
             </div>

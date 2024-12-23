@@ -13,6 +13,7 @@ interface TransactionListProps {
   transactions: Transaccion[];
   isLoading?: boolean;
   onTransactionClick?: (transaction: Transaccion) => void;
+  onTransactionUpdated?: () => void; // Add this prop
 }
 
 interface GroupedTransactions {
@@ -25,12 +26,14 @@ export function TransactionList({
   selectedTimeRange, 
   transactions, 
   isLoading,
-  onTransactionClick 
+  onTransactionClick,
+  onTransactionUpdated // Add this prop
 }: TransactionListProps) {
   // Agrupar transacciones por fecha
   const groupedTransactions = transactions.reduce((groups: GroupedTransactions, transaction) => {
     const date = new Date(transaction.fecha);
-    const groupKey = format(date, 'yyyy-MM-dd');
+    const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000); // Adjust for timezone
+    const groupKey = format(localDate, 'yyyy-MM-dd');
     
     if (!groups[groupKey]) {
       groups[groupKey] = [];
@@ -67,6 +70,11 @@ export function TransactionList({
     );
   }
 
+  const handleTransactionClick = (transaction: Transaccion) => {
+    onTransactionClick?.(transaction);
+    onTransactionUpdated?.(); // Trigger update
+  };
+
   return (
     <div className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
       {Object.entries(groupedTransactions).map(([date, transactions]) => (
@@ -85,7 +93,7 @@ export function TransactionList({
               <TransactionItem
                 key={transaction._id}
                 transaction={transaction}
-                onClick={() => onTransactionClick?.(transaction)}
+                onClick={() => handleTransactionClick(transaction)}
               />
             ))}
           </div>
@@ -103,6 +111,7 @@ function TransactionItem({
   transaction: Transaccion;
   onClick?: () => void;
 }) {
+  const localDate = new Date(new Date(transaction.fecha).getTime() + new Date(transaction.fecha).getTimezoneOffset() * 60000); // Adjust for timezone
   return (
     <button
       onClick={onClick}
@@ -115,7 +124,7 @@ function TransactionItem({
     >
       {/* Estructura en columnas para móvil */}
       <div className="space-y-2">
-        {/* Fila superior: Categoría y Hora */}
+        {/* Fila superior: Categoría y Fecha */}
         <div className="flex items-center justify-between">
           <span className={cn(
             "inline-flex px-2 py-1 rounded-full text-xs font-medium",
@@ -128,7 +137,7 @@ function TransactionItem({
             "text-xs",
             theme.colors.text.muted
           )}>
-            {format(new Date(transaction.fecha), "h:mm a", { locale: es })}
+            {format(localDate, "dd-MM-yyyy", { locale: es })}
           </span>
         </div>
         {/* Fila del medio: Descripción */}

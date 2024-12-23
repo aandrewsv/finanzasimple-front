@@ -1,6 +1,6 @@
 // src/components/transactions/transaction-edit-form.tsx
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { theme } from "@/lib/theme"
 import { Button } from "@/components/ui/button"
@@ -40,9 +40,20 @@ export function TransactionEditForm({
   const [monto, setMonto] = useState(transaction.monto.toString())
   const [categoria, setCategoria] = useState(transaction.categoria._id)
   const [descripcion, setDescripcion] = useState(transaction.descripcion)
+  const [fecha, setFecha] = useState<Date>(new Date(new Date(transaction.fecha).getTime() + new Date(transaction.fecha).getTimezoneOffset() * 60000)) // Adjust for timezone
 
   const isMobile = useMediaQuery("(max-width: 768px)")
   const { toast } = useToast()
+
+  useEffect(() => {
+    const formattedAmount = new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(transaction.monto)
+    setMonto(formattedAmount)
+  }, [transaction.monto])
 
   // Formatea el monto mientras el usuario escribe
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,6 +68,15 @@ export function TransactionEditForm({
       }).format(number))
     } else {
       setMonto('')
+    }
+  }
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = new Date(e.target.value);
+    if (!isNaN(newDate.getTime())) {
+      setFecha(newDate);
+    } else {
+      setFecha(new Date());
     }
   }
 
@@ -84,6 +104,7 @@ export function TransactionEditForm({
         monto: montoNumerico,
         categoria,
         descripcion,
+        fecha: fecha.toISOString(),
         tipo: transaction.tipo
       })
 
@@ -92,7 +113,7 @@ export function TransactionEditForm({
         description: "Los cambios se han guardado correctamente",
       })
 
-      onSaved()
+      onSaved(); // Ensure this is called after saving
       onClose()
     } catch (error) {
       toast({
@@ -117,7 +138,12 @@ export function TransactionEditForm({
           value={monto}
           onChange={handleAmountChange}
           placeholder="$0"
-          className="text-xl font-semibold text-center h-12"
+          className={cn(
+            "text-xl font-semibold text-center h-12",
+            theme.colors.background.main,
+            theme.colors.border.main,
+            transaction.tipo === 'ingreso' ? "text-green-600 dark:text-green-500" : "text-red-500 dark:text-red-500"
+          )}
         />
       </div>
 
@@ -130,6 +156,25 @@ export function TransactionEditForm({
           type={transaction.tipo}
           value={categoria}
           onChange={setCategoria}
+        />
+      </div>
+
+      {/* Date Picker */}
+      <div className="space-y-2">
+        <label className={cn("text-sm font-medium", theme.colors.text.muted)}>
+          Fecha
+        </label>
+        <Input
+          type="date"
+          value={fecha.toISOString().split('T')[0]}
+          onChange={handleDateChange}
+          className={cn(
+            "w-full px-4 py-2 rounded-md text-sm",
+            theme.colors.background.main,
+            theme.colors.border.main,
+            theme.colors.text.primary,
+            "focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+          )}
         />
       </div>
 

@@ -200,6 +200,7 @@ export interface CreateTransaccionDTO {
   descripcion: string;
   tipo: 'ingreso' | 'egreso';
   categoria: string;
+  fecha: string;
 }
 
 // API de Transacciones
