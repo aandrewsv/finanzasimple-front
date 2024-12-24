@@ -141,7 +141,8 @@ export default function TransactionsPage() {
                 "text-3xl font-semibold text-center h-16",
                 theme.colors.background.main,
                 theme.colors.border.main,
-                tipo === 'ingreso' ? "text-green-600 dark:text-green-500" : "text-red-500 dark:text-red-500"
+                tipo === 'ingreso' ? "text-green-600 dark:text-green-500" : "text-red-500 dark:text-red-500",
+                tipo === 'ingreso' ? "placeholder:text-green-600 dark:placeholder:text-green-500" : "placeholder:text-red-500 dark:placeholder:text-red-500",
               )}
             />
           </div>
